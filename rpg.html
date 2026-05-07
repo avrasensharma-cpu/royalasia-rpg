@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ROYALASIA RPG v18.0 - CLOUD FOCUS</title>
+    <style>
+        :root { --neon: #00ff41; --bg: #0d0208; --panel: #1a1a1a; --gold: #ffd700; --red: #ff4444; --blue: #00d4ff; }
+        body { background: var(--bg); color: var(--neon); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        
+        #game-interface { display: none; width: 95vw; height: 90vh; grid-template-columns: 350px 1fr 320px; grid-template-rows: 70px 1fr 130px; gap: 15px; }
+        .panel { background: var(--panel); border: 1px solid var(--neon); border-radius: 8px; padding: 20px; overflow-y: auto; }
+        header { grid-column: 1 / 4; display: flex; justify-content: space-between; align-items: center; padding: 0 25px; border-bottom: 1px solid var(--neon); }
+
+        #timer-box { text-align: center; border: 2px solid var(--neon); padding: 15px; margin-bottom: 20px; border-radius: 10px; background: #000; box-shadow: inset 0 0 10px var(--neon); }
+        #timer-display { font-size: 3em; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 0 0 10px var(--neon); }
+        
+        button { background: transparent; color: var(--neon); border: 1px solid var(--neon); padding: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover:not(:disabled) { background: var(--neon); color: black; box-shadow: 0 0 15px var(--neon); }
+        button:disabled { border-color: #444; color: #444; cursor: not-allowed; opacity: 0.5; }
+
+        input, select { background: #000; color: var(--neon); border: 1px solid var(--neon); padding: 10px; margin: 5px; }
+        #login-screen { background: var(--panel); border: 2px solid var(--neon); padding: 30px; width: 400px; text-align: center; border-radius: 10px; box-shadow: 0 0 20px rgba(0,255,65,0.2); }
+        .user-slot { border: 1px solid #0f0; margin: 5px; padding: 10px; cursor: pointer; display: flex; justify-content: space-between; }
+        
+        .log-entry { font-family: monospace; font-size: 0.85em; margin-bottom: 5px; padding-left: 8px; border-left: 2px solid var(--neon); }
+        .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,255,65,0.1); padding: 5px 0; }
+
+        .leader-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #333; font-size: 0.85em; }
+        .rank-1 { color: var(--gold); font-weight: bold; text-shadow: 0 0 5px var(--gold); }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h1 style="margin-top:0;">ROYALASIA v18.0</h1>
+        <div id="user-list" style="margin-bottom:15px; max-height: 150px; overflow-y: auto;"></div>
+        <hr style="border-color: #333;">
+        <input type="text" id="reg-name" placeholder="Student Name" style="width:80%">
+        <input type="text" id="reg-phone" placeholder="Phone ID (Unique ID)" style="width:80%">
+        <input type="password" id="reg-pin" placeholder="4-Digit PIN" maxlength="4" style="width:80%">
+        <button onclick="Game.register()" style="width: 85%; margin-top: 10px;">ENTER ACADEMIC CIRCUIT</button>
+    </div>
+
+    <div id="game-interface">
+        <header id="main-header">
+            <div style="font-size: 1.1em;">STUDENT: <span id="ui-name" style="color: var(--blue);">---</span></div>
+            <div style="letter-spacing: 2px; font-weight: bold; color: var(--gold);">CLOUD SYNCHRONIZED SESSION</div>
+            <div>
+                <button onclick="Game.deleteAccount()" style="border-color: var(--red); color: var(--red); margin-right: 10px;">DELETE DATA</button>
+                <button onclick="Game.logout()" style="border-color: var(--blue); color: var(--blue);">LOGOUT</button>
+            </div>
+        </header>
+
+        <aside class="panel">
+            <div id="timer-box">
+                <div id="timer-display">00:00</div>
+                <div id="timer-label" style="font-size: 0.7em; color: var(--gold);">SECURE SESSION</div>
+            </div>
+            <h3>REPORT CARD</h3>
+            <div style="margin-bottom: 10px;">Level: <span id="ui-lvl">1</span> | Gold: ₹<span id="ui-gold">100</span></div>
+            <div class="stat-row"><span>Physics:</span> <span id="s-p">10</span></div>
+            <div class="stat-row"><span>Chemistry:</span> <span id="s-c">10</span></div>
+            <div class="stat-row"><span>Mathematics:</span> <span id="s-m">10</span></div>
+            <div class="stat-row"><span>Biology:</span> <span id="s-b">10</span></div>
+            <div class="stat-row" style="color: var(--blue);"><span>Computer Science:</span> <span id="s-cs">10</span></div>
+        </aside>
+
+        <main id="log-container" class="panel" style="background:#000; color: #aaa;"></main>
+
+        <aside class="panel" style="border-color: var(--gold);">
+            <h3 style="color: var(--gold); margin-top: 0;">🏆 MASTERY RANKINGS</h3>
+            <div id="leaderboard-content"></div>
+        </aside>
+
+        <footer class="panel" id="main-footer" style="grid-column: 1 / 4; display: flex; justify-content: center; align-items: center; gap: 15px;">
+            <select id="study-subject">
+                <option value="p">Physics</option>
+                <option value="c">Chemistry</option>
+                <option value="m">Mathematics</option>
+                <option value="b">Biology</option>
+                <option value="cs">Computer Science</option>
+            </select>
+            <select id="study-duration">
+                <option value="1">1 Min (Test)</option>
+                <option value="25">25 Mins (Focus)</option>
+                <option value="60">60 Mins (Deep Work)</option>
+                <option value="120">120 Mins (Mega Revision)</option>
+            </select>
+            <button id="btn-study" onclick="Game.startStudy()" style="padding: 10px 40px;">📚 COMMENCE STUDY</button>
+        </footer>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <script>
+        // FIREBASE CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAUEN3DxEsibOiKZQCtHnEfB5Qy-C03sE",
+            authDomain: "realtime-data-base-2c300.firebaseapp.com",
+            projectId: "realtime-data-base-2c300",
+            databaseURL: "https://realtime-data-base-2c300-default-rtdb.firebaseio.com",
+            storageBucket: "realtime-data-base-2c300.firebasestorage.app",
+            messagingSenderId: "689276437917",
+            appId: "1:689276437917:web:c0353b8cc9a3d1580e9b74"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const dbRef = firebase.database().ref("players");
+
+        const Game = {
+            db: {}, activeID: null,
+            subNames: { p: "Physics", c: "Chemistry", m: "Mathematics", b: "Biology", cs: "Computer Science" },
+
+            init() {
+                dbRef.on('value', (snapshot) => {
+                    this.db = snapshot.val() || {};
+                    this.renderUsers();
+                    this.updateLeaderboard();
+                    if(this.activeID) this.updateUI();
+                });
+            },
+
+            renderUsers() {
+                const list = document.getElementById("user-list");
+                list.innerHTML = "";
+                Object.values(this.db).forEach(u => {
+                    const d = document.createElement("div");
+                    d.className = "user-slot";
+                    d.innerHTML = `<span>${u.name}</span> <span style="color:var(--red);">LOCKED 🔒</span>`;
+                    d.onclick = () => this.challengePin(u.phone);
+                    list.appendChild(d);
+                });
+            },
+
+            register() {
+                const name = document.getElementById("reg-name").value.toUpperCase();
+                const phone = document.getElementById("reg-phone").value.trim();
+                const pin = document.getElementById("reg-pin").value;
+
+                if (!name || !phone || pin.length < 4) return alert("Required: Full Name, Phone ID, and 4-digit PIN.");
+                if (this.db[phone]) return alert("This Phone ID is already occupied!");
+
+                const newUser = { 
+                    name, phone, pin, level: 1, exp: 0, next: 100, gold: 100, 
+                    stats: {p:10, c:10, m:10, b:10, cs:10}
+                };
+
+                dbRef.child(phone).set(newUser).then(() => this.login(phone));
+            },
+
+            challengePin(phone) {
+                const p = prompt(`Enter PIN for ${this.db[phone].name}:`);
+                if (p === this.db[phone].pin) this.login(phone);
+                else alert("INCORRECT ACCESS KEY.");
+            },
+
+            login(id) {
+                this.activeID = id;
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("game-interface").style.display = "grid";
+                this.updateUI();
+                this.log("Handshake successful. Cloud data synchronized.");
+            },
+
+            updateUI() {
+                const u = this.db[this.activeID];
+                if(!u) return;
+                document.getElementById("ui-name").innerText = u.name;
+                document.getElementById("ui-lvl").innerText = u.level;
+                document.getElementById("ui-gold").innerText = u.gold;
+                document.getElementById("s-p").innerText = u.stats.p;
+                document.getElementById("s-c").innerText = u.stats.c;
+                document.getElementById("s-m").innerText = u.stats.m;
+                document.getElementById("s-b").innerText = u.stats.b;
+                document.getElementById("s-cs").innerText = u.stats.cs;
+            },
+
+            updateLeaderboard() {
+                const container = document.getElementById("leaderboard-content");
+                container.innerHTML = "";
+                const sorted = Object.values(this.db).map(u => {
+                    const s = u.stats;
+                    const total = (s.p||0)+(s.c||0)+(s.m||0)+(s.b||0)+(s.cs||0);
+                    return { name: u.name, total };
+                }).sort((a,b) => b.total - a.total);
+
+                sorted.forEach((u, i) => {
+                    const item = document.createElement("div");
+                    item.className = `leader-item ${i === 0 ? 'rank-1' : ''}`;
+                    item.innerHTML = `<span>#${i+1} ${u.name}</span><span>${u.total} PTS</span>`;
+                    container.appendChild(item);
+                });
+            },
+
+            log(msg) {
+                const container = document.getElementById("log-container");
+                container.innerHTML += `<div class="log-entry">> ${msg}</div>`;
+                container.scrollTop = container.scrollHeight;
+            },
+
+            startStudy() {
+                const dur = parseInt(document.getElementById("study-duration").value);
+                const subKey = document.getElementById("study-subject").value;
+                let sec = dur * 60;
+
+                // LOCK MECHANISM
+                document.getElementById("main-header").style.visibility = "hidden";
+                document.getElementById("main-footer").style.display = "none";
+                window.onbeforeunload = () => "Focus Session Active! Progress will be lost if you leave.";
+
+                document.getElementById("btn-study").disabled = true;
+                document.getElementById("timer-label").innerText = `STUDYING: ${this.subNames[subKey].toUpperCase()}`;
+                this.log(`Critical Focus initiated for ${this.subNames[subKey]}.`);
+                
+                const timer = setInterval(() => {
+                    sec--;
+                    const m = Math.floor(sec/60); const s = sec%60;
+                    document.getElementById("timer-display").innerText = `${m}:${s.toString().padStart(2,'0')}`;
+                    if(sec <= 0) {
+                        clearInterval(timer);
+                        this.finishStudy(subKey, dur);
+                    }
+                }, 1000);
+            },
+
+            finishStudy(subKey, mins) {
+                const u = this.db[this.activeID];
+                let mastery = Math.ceil(mins / 10) + (mins >= 60 ? 5 : 0);
+                u.stats[subKey] += mastery; 
+                u.exp += (mins * 60); 
+                u.gold += (mins * 10);
+                
+                if(u.exp >= u.next) { u.level++; u.exp=0; u.next *= 1.4; this.log("RANK UP!"); }
+                
+                // UNLOCK MECHANISM
+                document.getElementById("main-header").style.visibility = "visible";
+                document.getElementById("main-footer").style.display = "flex";
+                window.onbeforeunload = null;
+
+                document.getElementById("btn-study").disabled = false;
+                document.getElementById("timer-label").innerText = "SECURE SESSION";
+                
+                dbRef.child(this.activeID).set(u).then(() => {
+                    this.log(`Session verified. +${mastery} Mastery Points.`);
+                });
+            },
+
+            deleteAccount() {
+                const p = prompt("This will wipe all cloud data for this ID. Enter PIN to confirm:");
+                if(p === this.db[this.activeID].pin) {
+                    dbRef.child(this.activeID).remove().then(() => location.reload());
+                } else {
+                    alert("PIN Verification Failed.");
+                }
+            },
+
+            logout() { location.reload(); }
+        };
+
+        Game.init();
+    </script>
+</body>
+</html>
